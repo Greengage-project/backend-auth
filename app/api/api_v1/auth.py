@@ -4,6 +4,7 @@ from fastapi import APIRouter, Cookie, Depends, Request
 from fastapi.responses import RedirectResponse
 from starlette.requests import Request
 
+from app.utils.getAudience import getAudience
 from app import deps, crud
 from app.authentication import oauth, url
 from app.config import settings
@@ -23,7 +24,7 @@ async def login(
     if not current_user:
         # redirect_uri = request.url_for('callback')
         redirect_uri = f"{settings.COMPLETE_SERVER_NAME}/callback"
-        response = await oauth.smartcommunitylab.authorize_redirect(request, redirect_uri)
+        response = await oauth.auth0.authorize_redirect(request, redirect_uri)
         request.session["redirect_on_callback"] = redirect_on_callback
         return response
     else:
@@ -35,16 +36,27 @@ async def login(
 @router.get("/callback")
 async def callback(request: Request, collection: AsyncIOMotorCollection = Depends(get_collection)):
     try:
-        token = await oauth.smartcommunitylab.authorize_access_token(request)
-        await crud.update_or_create(collection, token["access_token"], True)
-        
+        token = await oauth.auth0.authorize_access_token(request)
+        audience: str =  getAudience(token["id_token"])
+        request.session["audience"] = audience
+
+        await crud.update_or_create(collection, token["id_token"], True, audience)
         response = RedirectResponse(request.session.get("redirect_on_callback", "/noredirect"))   
         request.session["id_token"] = token["id_token"]
         del request.session["redirect_on_callback"]
 
         response.set_cookie(
             key="auth_token",
-            value=token["access_token"],
+            value=token["id_token"],
+            expires=token["expires_in"],
+            httponly=True,
+            samesite='strict',
+            domain=settings.SERVER_NAME,
+            secure=settings.PRODUCTION_MODE,
+        )
+        response.set_cookie(
+            key="audience",
+            value=audience,
             expires=token["expires_in"],
             httponly=True,
             samesite='strict',
@@ -56,19 +68,20 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
         # print(user)
         return response
     except Exception as e:
+        print(e)
         raise e
 
 
 @router.get("/logout")
 async def logout(request: Request, redirect_on_callback: str):
     request.session["redirect_on_callback"] = redirect_on_callback
-    url = settings.SERVER_URL + "/endsession?" + urlencode(
-            {
-                "id_token_hint": request.session.get("id_token", None),
-                "post_logout_redirect_uri": settings.COMPLETE_SERVER_NAME + "/logout_callback"
-            },
-            
-        )
+    url = "https://" + settings.AUTH0_DOMAIN + "/v2/logout?" + urlencode(
+        {
+        "returnTo": f"{settings.COMPLETE_SERVER_NAME}/logout_callback",
+        "client_id": settings.AUTH0_CLIENT_ID,
+        },
+        quote_via=quote_plus,
+    )
     print(url)
     return RedirectResponse(url)
 
@@ -77,6 +90,7 @@ async def logout_callback(request: Request):
     response = RedirectResponse(request.session.get("redirect_on_callback", "/noredirect"))        
     del request.session["redirect_on_callback"]
     del request.session["id_token"]
+    del request.session["audience"]
 
     # issue of response.delete_cookie(key="auth_token") => https://github.com/tiangolo/fastapi/issues/2268
     expires = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)

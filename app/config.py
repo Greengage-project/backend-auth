@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     SERVER_URL: str
     SERVER_METADATA_URL: str
 
+    AUTH0_CLIENT_ID: str
+    AUTH0_CLIENT_SECRET: str
+    AUTH0_DOMAIN: str
+    
+
     PROTOCOL: str
     SERVER_NAME: str
     BASE_PATH: str
