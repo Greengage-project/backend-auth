@@ -59,8 +59,8 @@ async def delete(collection: AsyncIOMotorCollection, id: str):
     return await collection.delete_one({"_id": id})
 
 
-async def update_or_create(collection: AsyncIOMotorCollection, token, update_last_login, audience=None):
-    user_info: dict = decode_token(token, audience=audience)
+async def update_or_create(collection: AsyncIOMotorCollection, token, update_last_login):
+    user_info: dict = decode_token(token)
     user_id = user_info["sub"]
     db_user_info = await get(collection, user_id)
     if not db_user_info:

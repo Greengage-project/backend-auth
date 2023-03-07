@@ -1,7 +1,5 @@
 from typing import Generator
 
-from app.utils.getAudience import getAudience
-
 from fastapi import Depends, HTTPException, Request
 from app import crud
 from app.database import AsyncIOMotorCollection, get_collection
@@ -12,11 +10,7 @@ def get_token_in_cookie(request):
     except:
         return None
 
-def get_audience_in_cookie(request):
-    try:
-        return request.cookies.get("audience")
-    except:
-        return None
+
 
 def get_token_in_header(request):
     try:
@@ -36,11 +30,8 @@ async def get_current_user(
     try:
         
         token = get_token_in_cookie(request) or get_token_in_header(request)
-        audience = get_audience_in_cookie(request)
         if token:
-            if not audience:
-                audience = getAudience(token)
-            return await crud.update_or_create(collection, token, False, audience)
+            return await crud.update_or_create(collection, token, False)
         return None
     except Exception as e:
         raise e

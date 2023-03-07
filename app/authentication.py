@@ -17,14 +17,14 @@ oauth.register(
     server_metadata_url=f'https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration'
 )
 
-def decode_token(jwtoken, audience=None):
+def decode_token(jwtoken):
     jwks_client = PyJWKClient(url + "/.well-known/jwks.json")
     signing_key = jwks_client.get_signing_key_from_jwt(jwtoken)
     data = jwt.decode(
         jwtoken,
         signing_key.key,
         algorithms=["RS256"],
-        audience=audience,
+        audience=settings.AUTH0_CLIENT_ID,
         # options={"verify_nbf": False},
     )
     return data
