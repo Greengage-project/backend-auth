@@ -3,28 +3,33 @@ from app.config import settings
 from authlib.integrations.starlette_client import OAuth
 from jwt import PyJWKClient
 
-url = "https://dev-btw6zvhat22wdzmr.us.auth0.com"
+
+
+url = "http://auth1.localhost/auth/realms/greengage"
+url_openid = f"{url}/.well-known/openid-configuration"
 
 oauth = OAuth()
 
+
 oauth.register(
-    "auth0",
-    client_id=settings.AUTH0_CLIENT_ID,
-    client_secret=settings.AUTH0_CLIENT_SECRET,
+    name="keycloak",
+    client_id=settings.KEYCLOAK_CLIENT_ID,
+    client_secret=settings.KEYCLOAK_CLIENT_SECRET,
+    server_metadata_url=f"{url}/.well-known/openid-configuration",
     client_kwargs={
-        "scope": "openid profile email",
+        "scope": "openid profile",
     },
-    server_metadata_url=f'https://{settings.AUTH0_DOMAIN}/.well-known/openid-configuration'
 )
 
+
 def decode_token(jwtoken):
-    jwks_client = PyJWKClient(url + "/.well-known/jwks.json")
+    jwks_client = PyJWKClient(url + "/protocol/openid-connect/certs")
     signing_key = jwks_client.get_signing_key_from_jwt(jwtoken)
     data = jwt.decode(
         jwtoken,
         signing_key.key,
         algorithms=["RS256"],
-        audience=settings.AUTH0_CLIENT_ID,
+        audience=settings.KEYCLOAK_CLIENT_ID,
         # options={"verify_nbf": False},
     )
     return data

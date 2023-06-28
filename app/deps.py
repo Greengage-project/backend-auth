@@ -27,8 +27,7 @@ async def get_current_user(
     request: Request,
    collection: AsyncIOMotorCollection = Depends(get_collection)
 ) -> dict:
-    try:
-        
+    try: 
         token = get_token_in_cookie(request) or get_token_in_header(request)
         if token:
             return await crud.update_or_create(collection, token, False)

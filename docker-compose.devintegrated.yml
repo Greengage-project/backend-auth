@@ -1,7 +1,8 @@
+
 version: "3.7"
 services:
   auth:
-    image: 'authdev'
+    image: "authdev"
     container_name: auth-integrated
     volumes:
       - .:/app
@@ -31,6 +32,8 @@ services:
         set}-auth.loadbalancer.server.port=${PORT}
     networks:
       - traefik-public
+    extra_hosts:
+      - "auth1.localhost:172.17.0.1"
 networks:
   traefik-public:
     external: true

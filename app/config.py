@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     AUTH0_CLIENT_ID: str
     AUTH0_CLIENT_SECRET: str
     AUTH0_DOMAIN: str
+
+    KEYCLOAK_CLIENT_ID: str
+    KEYCLOAK_CLIENT_SECRET: str
+    KEYCLOAK_REALM: str
     
 
     PROTOCOL: str
