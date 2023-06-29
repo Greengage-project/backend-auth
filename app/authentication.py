@@ -5,7 +5,7 @@ from jwt import PyJWKClient
 
 
 
-url = "http://auth1.localhost/auth/realms/greengage"
+url = settings.KEYCLOAK_URL_REALM
 url_openid = f"{url}/.well-known/openid-configuration"
 
 oauth = OAuth()

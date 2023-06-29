@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     KEYCLOAK_CLIENT_ID: str
     KEYCLOAK_CLIENT_SECRET: str
     KEYCLOAK_REALM: str
+    KEYCLOAK_URL_REALM: str
     
 
     PROTOCOL: str
