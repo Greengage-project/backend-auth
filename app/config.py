@@ -25,13 +25,10 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     CLIENT_ID: str
-    CLIENT_SECRET: str
     SERVER_URL: str
     SERVER_METADATA_URL: str
 
-    AUTH0_CLIENT_ID: str
-    AUTH0_CLIENT_SECRET: str
-    AUTH0_DOMAIN: str
+    
 
     KEYCLOAK_CLIENT_ID: str
     KEYCLOAK_CLIENT_SECRET: str
