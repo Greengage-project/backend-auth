@@ -75,8 +75,9 @@ async def logout(request: Request, redirect_on_callback: str):
 
     request.session["redirect_on_callback"] = redirect_on_callback
     # http://localhost:8080/auth/realms/{realm}/protocol/openid-connect/logout?redirect_uri={redirect_uri}
-    complete_server_name = settings.PROTOCOL + "://" + settings.DOMAIN
-    url = f"{settings.KEYCLOAK_URL_REALM}/auth/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri={quote_plus(complete_server_name)}/logout_callback"
+    print('-----------------------------------')
+    print(settings.COMPLETE_SERVER_NAME)
+    url = f"{settings.KEYCLOAK_URL_REALM}/auth/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri={quote_plus(settings.COMPLETE_SERVER_NAME)}/logout_callback"
     print(url)
     return RedirectResponse(url)
 
