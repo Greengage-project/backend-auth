@@ -39,7 +39,7 @@ async def login(
 @router.get("/callback")
 async def callback(request: Request, collection: AsyncIOMotorCollection = Depends(get_collection)):
     """
-    Callback from Auth0 login page
+    Callback from Keycloak login page
     """
     try:
         token = await oauth.keycloak.authorize_access_token(request)
@@ -70,16 +70,13 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
 @router.get("/logout")
 async def logout(request: Request, redirect_on_callback: str):
     """
-    Redirect to Auth0 logout page
+    Redirect to Keycloak logout page
     """
+
     request.session["redirect_on_callback"] = redirect_on_callback
-    url = "https://" + settings.AUTH0_DOMAIN + "/v2/logout?" + urlencode(
-        {
-            "returnTo": f"{settings.COMPLETE_SERVER_NAME}/logout_callback",
-            "client_id": settings.AUTH0_CLIENT_ID,
-        },
-        quote_via=quote_plus,
-    )
+    # http://localhost:8080/auth/realms/{realm}/protocol/openid-connect/logout?redirect_uri={redirect_uri}
+    complete_server_name = settings.PROTOCOL + "://" + settings.DOMAIN
+    url = f"{settings.KEYCLOAK_URL_REALM}/auth/realms/{settings.KEYCLOAK_REALM}/protocol/openid-connect/logout?redirect_uri={quote_plus(complete_server_name)}/logout_callback"
     print(url)
     return RedirectResponse(url)
 
@@ -87,7 +84,7 @@ async def logout(request: Request, redirect_on_callback: str):
 @router.get("/logout_callback")
 async def logout_callback(request: Request):
     """
-    Callback from Auth0 logout page
+    Callback from Keycloak logout page
     """
     response = RedirectResponse(request.session.get(
         "redirect_on_callback", "/noredirect"))
