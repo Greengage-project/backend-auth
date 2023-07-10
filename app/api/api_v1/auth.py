@@ -73,8 +73,9 @@ async def logout(request: Request, redirect_on_callback: str):
     Redirect to Keycloak logout page
     """
 
-    request.session["redirect_on_callback"] = redirect_on_callback  
-    url = f"{settings.KEYCLOAK_URL_REALM}/protocol/openid-connect/logout?redirect_uri={quote_plus(settings.COMPLETE_SERVER_NAME)}/logout_callback"
+    request.session["redirect_on_callback"] = redirect_on_callback
+    url = f"{settings.KEYCLOAK_URL_REALM}/protocol/openid-connect/logout?redirect_uri={redirect_on_callback}&client_id={settings.KEYCLOAK_CLIENT_ID}"
+    print(url)
     return RedirectResponse(url)
 
 
