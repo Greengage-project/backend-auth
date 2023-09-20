@@ -43,7 +43,7 @@ jobs:
         id: trigger_dev_deployment
         with:
           route: POST /repos/{owner}/{repo}/dispatches
-          owner: interlink-project
+          owner: Greengage-project
           repo: interlink-project
           event_type: update-dev-environment
         env:
