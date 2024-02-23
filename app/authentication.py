@@ -1,6 +1,7 @@
 import jwt
-from jwt import PyJWKClient
 from app.config import settings
+from authlib.integrations.starlette_client import OAuth
+from jwt import PyJWKClient
 
 
 url = settings.KEYCLOAK_URL_REALM
