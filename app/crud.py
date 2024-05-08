@@ -71,6 +71,10 @@ async def update_or_create(collection: AsyncIOMotorCollection, token, update_las
             db_user_info = await update(collection=collection, id=user_id, user_info={
                 "last_login": datetime.now()
             })
+        if "picture" in user_info:
+            print("Downloading picture")
+            db_user_info["picture"] = download_profile_image(
+                user_info["picture"], user_id)
     db_user_info["id"] = db_user_info["_id"]
     del db_user_info["_id"]
     print("Returning db user from update_or_create", db_user_info)
