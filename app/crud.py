@@ -37,7 +37,11 @@ async def create(collection: AsyncIOMotorCollection, user_info: dict):
     user_id = user_info["sub"]
     user_info["_id"] = user_id
     if "picture" in user_info:
-        user_info["picture"] = download_profile_image(user_info["picture"], user_id)
+        try:
+            user_info["picture"] = download_profile_image(
+                user_info["picture"], user_id)
+        except Exception as e:
+            print("Error downloading profile image", e)
     if "given_name" in user_info and "family_name" in user_info:
         user_info["full_name"] = user_info["given_name"] + \
             " " + user_info["family_name"]
