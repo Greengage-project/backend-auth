@@ -66,7 +66,7 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
         print(err)
         if "mismatching_state" in str(err):
             print("[x] Error in callback: mismatching_state")
-            return RedirectResponse(f"{settings.COMPLETE_SERVER_NAME}/auth/login")
+            return RedirectResponse(f"{settings.COMPLETE_SERVER_NAME}/auth/login?redirect_on_callback=/dashboard")
         raise err
 
 
