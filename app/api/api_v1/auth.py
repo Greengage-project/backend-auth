@@ -48,13 +48,12 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
             "redirect_on_callback", "/noredirect"))
         request.session["id_token"] = token["id_token"]
         del request.session["redirect_on_callback"]
-
         response.set_cookie(
             key="auth_token",
             value=token["id_token"],
             expires=token["expires_in"],
             httponly=True,
-            samesite='strict',
+            samesite='none',
             domain=settings.SERVER_NAME,
             secure=settings.PRODUCTION_MODE,
         )
@@ -64,10 +63,13 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
         return response
     except Exception as err:
         print(err)
-        if "mismatching_state" in str(err):
+        attempt = request.query_params.get("attempt", 0)
+        
+        if "mismatching_state" in str(err) and attempt == 0:
             print("[x] Error in callback: mismatching_state")
-            return RedirectResponse(f"{settings.COMPLETE_SERVER_NAME}/login?redirect_on_callback=/dashboard")
-        raise err
+            return RedirectResponse(f"{settings.COMPLETE_SERVER_NAME}/login?redirect_on_callback=/dashboard&attempt=1")
+        else:
+            raise err
 
 
 @router.get("/logout")
@@ -98,7 +100,7 @@ async def logout_callback(request: Request):
         value="",
         expires=expires.strftime("%a, %d %b %Y %H:%M:%S GMT"),
         httponly=True,
-        samesite='strict',
+        samesite='none',
         domain=settings.SERVER_NAME,
         secure=settings.PRODUCTION_MODE,
     )
