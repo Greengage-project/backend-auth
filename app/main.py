@@ -50,8 +50,7 @@ app.add_middleware(
     secret_key=settings.SECRET_KEY, 
     same_site="none",
     https_only=True,
-    session_cookie="session",
-    domain=".greengage-project.eu"
+    session_cookie="session"
 )
 
 ###################
