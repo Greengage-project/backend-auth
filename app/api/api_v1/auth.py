@@ -27,7 +27,7 @@ async def login(
     if not current_user:
         # redirect_uri = request.url_for('callback')
         redirect_uri = f"{settings.COMPLETE_SERVER_NAME}/callback"
-        response = await oauth.keycloak.authorize_redirect(request, redirect_uri)
+        response = await oauth.keycloak.authorize_redirect(request, redirect_uri, prompt="select_account")
         request.session["redirect_on_callback"] = redirect_on_callback
         return response
     else:
