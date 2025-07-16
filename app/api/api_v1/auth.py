@@ -91,8 +91,10 @@ async def logout_callback(request: Request):
     response = RedirectResponse(request.session.get(
         "redirect_on_callback", "/noredirect"))
     del request.session["redirect_on_callback"]
-    del request.session["id_token"]
-
+    try:
+        del request.session["id_token"]
+    except KeyError:
+        print("No id_token found in session, skipping deletion.")
     # issue of response.delete_cookie(key="auth_token") => https://github.com/tiangolo/fastapi/issues/2268
     expires = datetime.datetime.utcnow() + datetime.timedelta(seconds=1)
     response.set_cookie(
