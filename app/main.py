@@ -45,7 +45,12 @@ app.include_router(usersrouter, prefix=f"{settings.BASE_PATH}{settings.API_V1_ST
 
 
 from starlette.middleware.sessions import SessionMiddleware
-app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=settings.SECRET_KEY, 
+    same_site="none",
+    https_only=True
+)
 
 ###################
 # Staticfiles
