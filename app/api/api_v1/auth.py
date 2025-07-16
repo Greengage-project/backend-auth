@@ -24,6 +24,8 @@ async def login(
     """
     Redirect to Auth0 login page
     """
+    print("[login] session keys before redirect:", request.session.keys())
+    print("[login] setting redirect_on_callback:", redirect_on_callback)
     if not current_user:
         # redirect_uri = request.url_for('callback')
         redirect_uri = f"{settings.COMPLETE_SERVER_NAME}/callback"
@@ -41,6 +43,8 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
     """
     Callback from Keycloak login page
     """
+    print("[callback] session keys on return:", request.session.keys())
+    print("[callback] received state:", request.query_params.get("state"))
     try:
         token = await oauth.keycloak.authorize_access_token(request)
         await crud.update_or_create(collection, token["id_token"], True)
