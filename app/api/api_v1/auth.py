@@ -1,5 +1,5 @@
 import datetime
-from typing import Union, Iterable 
+from typing import Union
 
 from fastapi import APIRouter, Cookie, Depends, Request
 from fastapi.responses import RedirectResponse
@@ -14,55 +14,6 @@ from urllib.parse import quote_plus, urlencode
 
 router = APIRouter()
 
-
-def _domain_variants(hostname: str) -> Iterable[str]:
-    """
-    Generate possible domain variants for setting cookies.
-    E.g. for "sub.example.com" yield:
-    - "sub.example.com"
-    - ".example.com"
-    """
-    yield hostname
-    root = settings.SERVER_NAME  
-    if root:
-        yield root if root.startswith(".") else f".{root}"
-
-def wipe_session_and_cookies(request: Request, response: RedirectResponse) -> None:
-    """
-    Wipe out session and cookies by setting them to expire in the past.
-
-    Args:
-    - request: FastAPI Request object
-    - response: FastAPI Response object where cookies will be set to expire
-    """
-
-    # 1) limpia la sesión
-    try:
-        request.session.clear()
-    except Exception as e:
-        print(f"[wipe] error clearing session: {e}")
-
-    expires = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime("%a, %d %b %Y %H:%M:%S GMT")
-
-    hostname = request.url.hostname or ""
-    paths = {"/", settings.BASE_PATH or "/"}
-    for ck in list(request.cookies.keys()):
-        for dom in _domain_variants(hostname):
-            for p in paths:
-                try:
-                    response.set_cookie(
-                        key=ck,
-                        value="",
-                        expires=expires,
-                        max_age=0,
-                        path=p,
-                        domain=dom,
-                        secure=True,
-                        httponly=True,
-                        samesite="none",
-                    )
-                except Exception as e:
-                    print(f"[wipe] error deleting cookie {ck} for {dom}{p}: {e}")
 
 @router.get("/login")
 async def login(
@@ -87,7 +38,7 @@ async def login(
         return RedirectResponse(redirect_on_callback)
 
 
-@router.get("/callback", name="callback")
+@router.get("/callback")
 async def callback(request: Request, collection: AsyncIOMotorCollection = Depends(get_collection)):
     """
     Callback from Keycloak login page
@@ -96,57 +47,33 @@ async def callback(request: Request, collection: AsyncIOMotorCollection = Depend
     print("[callback] received state:", request.query_params.get("state"))
     try:
         token = await oauth.keycloak.authorize_access_token(request)
-
-        id_token = token["id_token"]
-        expires_in = int(token.get("expires_in", 3600))
-
-        await crud.update_or_create(collection, id_token, True)
-
-        request.session["id_token"] = id_token
-
-        redirect_to = request.session.pop("redirect_on_callback", "/")
-        resp = RedirectResponse(redirect_to)
-
-        resp.set_cookie(
+        await crud.update_or_create(collection, token["id_token"], True)
+        response = RedirectResponse(request.session.get(
+            "redirect_on_callback", "/noredirect"))
+        request.session["id_token"] = token["id_token"]
+        del request.session["redirect_on_callback"]
+        response.set_cookie(
             key="auth_token",
-            value=id_token,
-            max_age=expires_in,
+            value=token["id_token"],
+            expires=token["expires_in"],
             httponly=True,
-            samesite="none",
-            secure=True,
-            domain=(settings.SERVER_NAME if settings.SERVER_NAME else request.url.hostname),
-            path="/",
+            samesite='none',
+            domain=settings.SERVER_NAME,
+            secure=settings.PRODUCTION_MODE,
         )
-        return resp
 
+        # user = await oauth.smartcommunitylab.parse_id_token(request, token)
+        # print(user)
+        return response
     except Exception as err:
-        print("[callback] error:", err)
-        reason = str(err)
-
-        attempt = int(request.query_params.get("attempt", "0") or 0)
-
-        if "mismatching_state" in reason:
-            login_url = str(request.url_for("login"))
-
-            if attempt >= 1:
-                return PlainTextResponse(
-                    "Login failed (CSRF state mismatch) after retry. Please reload and try again.",
-                    status_code=400,
-                )
-
-            redirect_on_callback = request.session.get("redirect_on_callback", "/dashboard")
-            retry_url = f"{login_url}?redirect_on_callback={redirect_on_callback}&attempt=1"
-
-            resp = RedirectResponse(retry_url, status_code=302)
-            wipe_session_and_cookies(request, resp)
-            for k in ("auth_token", "next-auth.session-token", "__Secure-next-auth.session-token"):
-                resp.set_cookie(key=k, value="", max_age=0, expires=0, path="/",
-                                domain=(settings.SERVER_NAME if settings.SERVER_NAME else request.url.hostname),
-                                secure=True, httponly=True, samesite="none")
-            return resp
-
-        return PlainTextResponse(f"Login failed: {reason}", status_code=400)
-
+        print(err)
+        attempt = request.query_params.get("attempt", 0)
+        
+        if "mismatching_state" in str(err) and attempt == 0:
+            print("[x] Error in callback: mismatching_state")
+            return RedirectResponse(f"{settings.COMPLETE_SERVER_NAME}/login?redirect_on_callback=/dashboard&attempt=1")
+        else:
+            raise err
 
 
 @router.get("/logout")
